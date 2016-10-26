@@ -1,0 +1,12 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+<file>images/background.png</file>
+<file>images/box.gif</file>
+<file>images/2048logo.png</file>
+<file>images/grid.png</file>
+<file>images/scoreBackground.png</file>
+<file>images/recordBackground.png</file>
+<file>images/optionBackground.png</file>
+<file>images/boxGroupBackground.png</file>
+</qresource>
+</RCC>
