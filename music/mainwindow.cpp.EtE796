@@ -1,0 +1,376 @@
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+
+#include <QtWidgets>
+#include <QMediaMetaData>
+
+#include <stdio.h>
+#include <stdlib.h>
+
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+    ui->listView->hide();
+    layout()->setSizeConstraint(QLayout::SetFixedSize);
+
+    ui->playButton->setFlat(true);
+
+    now1=0;now2=0;total1=0;total2=0;volumn=0;random=false;playrate=1.0;
+
+    tobgblue();
+
+    player = new QMediaPlayer;
+    musiclist = new QMediaPlaylist;
+    musiclist->setPlaybackMode(QMediaPlaylist::Sequential);
+    player->setPlaylist(musiclist);
+    player->setVolume(30);
+    ui->songProgress->setRange(0,0);
+
+    ui->playButton->setDisabled(true);
+
+
+    connect(player,SIGNAL(positionChanged(qint64)),this,SLOT(positionChanged(qint64)));
+    connect(player,SIGNAL(durationChanged(qint64)),this,SLOT(durationChanged(qint64)));
+    connect(player,SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)),this,SLOT(Loadinfo(QMediaPlayer::MediaStatus)));
+    connect(musiclist,SIGNAL(mediaInserted(int,int)),this,SLOT(disableplay()));
+    connect(musiclist,SIGNAL(mediaRemoved(int,int)),this,SLOT(disableplay()));
+
+    connect(ui->actionImport_local_files,SIGNAL(triggered()),this,SLOT(importsongs()));
+    connect(ui->actionPlay,SIGNAL(triggered()),this,SLOT(toPlay()));
+    connect(ui->actionPause,SIGNAL(triggered()),this,SLOT(toPause()));
+    connect(ui->actionStop,SIGNAL(triggered()),this,SLOT(toStop()));
+    connect(ui->actionNext,SIGNAL(triggered()),this,SLOT(on_nextButton_clicked()));
+    connect(ui->actionPrevious,SIGNAL(triggered()),this,SLOT(on_previousButton_clicked()));
+    connect(ui->actionFaster,SIGNAL(triggered()),this,SLOT(faster()));
+    connect(ui->actionSlower,SIGNAL(triggered()),this,SLOT(slower()));
+    connect(ui->actionAddprogress,SIGNAL(triggered()),this,SLOT(addProgress()));
+    connect(ui->actionSubprograss,SIGNAL(triggered()),this,SLOT(subProgress()));
+    connect(ui->actionbgblue,SIGNAL(triggered()),this,SLOT(tobgblue()));
+    connect(ui->actionbgyellow,SIGNAL(triggered()),this,SLOT(tobgyellow()));
+    connect(ui->actionbggreen,SIGNAL(triggered()),this,SLOT(tobggreen()));
+    connect(ui->actionRandom,SIGNAL(triggered()),this,SLOT(torandom()));
+    connect(ui->actionLoop,SIGNAL(triggered()),this,SLOT(toloop()));
+    connect(ui->actionCurrentItemInLoop,SIGNAL(triggered()),this,SLOT(tooneloop()));
+    connect(ui->actionSequential,SIGNAL(triggered()),this,SLOT(toseq()));
+
+    connect(ui->action_Qt,SIGNAL(triggered()),this,SLOT(aboutQt()));
+    connect(ui->actionGong,SIGNAL(triggered()),this,SLOT(aboutGong()));
+    connect(ui->action_Auther,SIGNAL(triggered()),this,SLOT(aboutAuther()));
+
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+
+//volumn
+void MainWindow::on_volumnBar_valueChanged(int position)
+{
+    player->setVolume(position);
+    volumnMatch();
+}
+
+void MainWindow::volumnMatch()
+{
+    if(ui->volumnBar->value()==0)
+        ui->volumnButton->setIcon(QIcon(":/image/novolumnimage"));
+    else if(ui->volumnBar->value()>60)
+        ui->volumnButton->setIcon(QIcon(":/image/bigvolumnimage"));
+    else if(ui->volumnBar->value()>30)
+        ui->volumnButton->setIcon(QIcon(":/image/middlevolumnimage"));
+    else
+        ui->volumnButton->setIcon(QIcon(":/image/smallvolumnimage"));
+}
+
+void MainWindow::on_volumnButton_clicked()
+{
+    if(ui->volumnBar->value()!=0){
+        volumn = ui->volumnBar->value();
+        ui->volumnBar->setValue(0);
+    }else{
+        ui->volumnBar->setValue(volumn);
+    }
+    player->setVolume(ui->volumnBar->value());
+    volumnMatch();
+}
+
+
+//play
+void MainWindow::toPlay()
+{
+    player->play();
+    ui->playButton->setIcon(QIcon(":/image/waitimage"));
+}
+
+void MainWindow::toPause()
+{
+    player->pause();
+    ui->playButton->setIcon(QIcon(":/image/playimage"));
+}
+
+void MainWindow::toStop()
+{
+    player->stop();
+    ui->playButton->setIcon(QIcon(":/image/playimage"));
+}
+
+void MainWindow::on_playButton_clicked()
+{
+    if(player->state()!=QMediaPlayer::PlayingState)
+        toPlay();
+    else if(player->state()==QMediaPlayer::PlayingState)
+        toPause();
+}
+
+void MainWindow::on_nextButton_clicked()
+{
+    if(musiclist->isEmpty())
+        return;
+    musiclist->next();
+    toStop();
+}
+
+void MainWindow::on_previousButton_clicked()
+{
+    if(musiclist->isEmpty())
+        return;
+    musiclist->previous();
+    toStop();
+}
+
+
+//progress
+void MainWindow::positionChanged(qint64 position)
+{
+    ui->songProgress->setValue(position);
+    now1 = position/1000/60;
+    now2 = position/1000 - now1*60;
+    UpdateTime();
+}
+
+void MainWindow::durationChanged(qint64 duration)
+{
+    ui->songProgress->setRange(0,duration);
+    total1 = duration/1000/60;
+    total2 = duration/1000 - total1*60;
+    UpdateTime();
+}
+
+void MainWindow::UpdateTime(){
+    QString time = QString::number(now1)+":"+QString::number(now2)+"\\"+QString::number(total1)+":"+QString::number(total2);
+    ui->timelabel->setText(time);
+}
+
+void MainWindow::addProgress()
+{
+    qint64 position = player->position();
+    if(player->duration()-position<5000)
+        return;
+    else
+        player->setPosition(position+5000);
+}
+
+void MainWindow::subProgress()
+{
+    qint64 position = player->position();
+    if(position<5000)
+        return;
+    else
+        player->setPosition(position-5000);
+}
+
+
+//background
+void MainWindow::tobgblue()
+{
+    QPixmap pixmap = QPixmap(":/image/bgblue").scaled(this->size());
+    QPalette palette(this->palette());
+    palette.setBrush(QPalette::Background, QBrush(pixmap));
+    this->setPalette(palette);
+    ui->actionbgblue->setChecked(true);
+    ui->actionbggreen->setChecked(false);
+    ui->actionbgyellow->setChecked(false);
+}
+
+void MainWindow::tobgyellow()
+{
+    QPixmap pixmap = QPixmap(":/image/bgyellow").scaled(this->size());
+    QPalette palette(this->palette());
+    palette.setBrush(QPalette::Background, QBrush(pixmap));
+    this->setPalette(palette);
+    ui->actionbgblue->setChecked(false);
+    ui->actionbggreen->setChecked(false);
+    ui->actionbgyellow->setChecked(true);
+}
+
+void MainWindow::tobggreen()
+{
+    QPixmap pixmap = QPixmap(":/image/bggreen").scaled(this->size());
+    QPalette palette(this->palette());
+    palette.setBrush(QPalette::Background, QBrush(pixmap));
+    this->setPalette(palette);
+    ui->actionbgblue->setChecked(false);
+    ui->actionbggreen->setChecked(true);
+    ui->actionbgyellow->setChecked(false);
+}
+
+
+//下拉列表
+void MainWindow::on_listButton_clicked()
+{
+    if(ui->listView->isHidden()){
+        ui->listView->show();
+        ui->listButton->setIcon(QIcon(":/image/listUp"));
+    }
+    else{
+        ui->listView->hide();
+        ui->listButton->setIcon(QIcon(":/image/listDown"));
+    }
+}
+
+
+//playmode
+void MainWindow::toloop()
+{
+    musiclist->setPlaybackMode(QMediaPlaylist::Loop);
+    ui->modelButton->setIcon(QIcon(":/image/loop"));
+}
+
+void MainWindow::toseq()
+{
+    musiclist->setPlaybackMode(QMediaPlaylist::Sequential);
+    ui->modelButton->setIcon(QIcon(":/image/seq"));
+}
+
+void MainWindow::tooneloop()
+{
+    musiclist->setPlaybackMode(QMediaPlaylist::CurrentItemInLoop);
+    ui->modelButton->setIcon(QIcon(":/image/oneloop"));
+}
+
+void MainWindow::torandom()
+{
+    musiclist->setPlaybackMode(QMediaPlaylist::Random);
+    ui->modelButton->setIcon(QIcon(":/image/random"));
+}
+
+void MainWindow::on_modelButton_clicked()
+{
+    switch(musiclist->playbackMode()){
+    case QMediaPlaylist::Random:
+        toloop();
+        break;
+    case QMediaPlaylist::Loop:
+        tooneloop();
+        break;
+    case QMediaPlaylist::CurrentItemInLoop:
+        toseq();
+        break;
+    case QMediaPlaylist::Sequential:
+        torandom();
+        break;
+    default:break;
+    }
+}
+
+
+//about
+void MainWindow::aboutGong()
+{
+
+}
+
+void MainWindow::aboutAuther()
+{
+    QMessageBox message(QMessageBox::NoIcon, "About Auther",tr("<h1>aaaa</h1><p><fony color=\"red\">-------------------------------------------------------</font></p>啊搜多爱速冻改埃索地阿斯度萨达"));
+    message.setIconPixmap(QPixmap(":/image/auther"));
+    message.exec();
+}
+
+void MainWindow::aboutQt()
+{
+    QMessageBox::aboutQt(NULL, "About Qt");
+}
+
+void MainWindow::importsongs()
+{
+    QString initialName=QDir::homePath();
+    QStringList pathList=QFileDialog::getOpenFileNames(this, tr("选择文件"), initialName, tr("MP3 Files (*.mp3)"));
+    for(int i=0; i<pathList.size(); ++i)
+    {
+        QString path=QDir::toNativeSeparators(pathList.at(i));
+
+        if(!path.isEmpty())
+        {
+            musiclist->addMedia(QUrl::fromLocalFile(path));
+        }
+    }
+    musiclist->setCurrentIndex(0);
+    toStop();
+}
+
+void MainWindow::displaylist()
+{
+
+}
+
+void MainWindow::Loadinfo(QMediaPlayer::MediaStatus status)
+{
+    if(status==QMediaPlayer::LoadedMedia){
+        QString info = player->metaData(QMediaMetaData::Title).toString()+" ---- "+player->metaData(QMediaMetaData::Author).toString();
+        ui->songInfo->setText(info);
+        int rownum=ui->listView->rowCount();//行数
+        ui->listView->insertRow(rownum);//插入空行
+        QString s1 = player->metaData(QMediaMetaData::Title).toString();
+        QString s2 = player->metaData(QMediaMetaData::Author).toString();
+        QString s3 = player->metaData(QMediaMetaData::AlbumTitle).toString();
+        QString s4 = player->metaData(QMediaMetaData::Duration).toString();
+        ui->listView->setItem(rownum, 1, new QTableWidgetItem(s1));
+        ui->listView->setItem(rownum, 2, new QTableWidgetItem(s2));
+        ui->listView->setItem(rownum, 3, new QTableWidgetItem(s3));
+        ui->listView->setItem(rownum, 4, new QTableWidgetItem(s4));
+    }
+    toPlay();
+}
+
+void MainWindow::faster()
+{
+    if(playrate>=3.0)
+        return;
+    else{
+        playrate+=0.1;
+        playratechange();
+    }
+}
+
+void MainWindow::slower()
+{
+    if(playrate<=0)
+        return;
+    else{
+        playrate-=0.1;
+        playratechange();
+    }
+}
+
+void MainWindow::playratechange()
+{
+    player->setPlaybackRate(playrate);
+    if(playrate==1.0)
+        ui->playrateLabel->setText("");
+    else
+        ui->playrateLabel->setText("  x"+QString::number(playrate));
+
+}
+
+void MainWindow::disableplay()
+{
+    if(musiclist->mediaCount()==0)
+        ui->playButton->setDisabled(true);
+    else
+        ui->playButton->setEnabled(true);
+}

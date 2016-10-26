@@ -1,0 +1,32 @@
+<RCC>
+    <qresource prefix="/image">
+        <file alias="nextimage">image/3.ico</file>
+        <file alias="previousimage">image/8.ico</file>
+        <file alias="waitimage">image/5.ico</file>
+        <file alias="smallvolumnimage">image/v10.ico</file>
+        <file alias="middlevolumnimage">image/v11.ico</file>
+        <file alias="bigvolumnimage">image/v12.ico</file>
+        <file alias="defaultLabel">image/defaultphoto.jpg</file>
+        <file alias="listUp">image/5 (1).ico</file>
+        <file alias="listDown">image/6.ico</file>
+        <file alias="novolumnimage">image/v9.ico</file>
+        <file alias="bgblue">image/7413593_115420350166_2.jpg</file>
+        <file alias="playimage">image/12 (1).ico</file>
+        <file alias="playicon">image/01045_14.png</file>
+        <file alias="pauseicon">image/01045_13.png</file>
+        <file alias="stopicon">image/01045_16.png</file>
+        <file alias="nexticon">image/01045_11.png</file>
+        <file alias="previousicon">image/01045_12.png</file>
+        <file alias="fastericon">image/01045_9.png</file>
+        <file alias="slowericon">image/01045_10.png</file>
+        <file alias="bgyellow">image/5105d7dbd3f92.jpg</file>
+        <file alias="bggreen">image/13211607760437g6maxyc67_medium.jpg</file>
+        <file alias="loop">image/loop.jpg</file>
+        <file alias="oneloop">image/oneloop.jpg</file>
+        <file alias="random">image/random.jpg</file>
+        <file alias="seq">image/seq.jpg</file>
+        <file alias="app">image/12312321.png</file>
+        <file alias="auther">image/MAIN201212111420076279977146320.jpg</file>
+        <file alias="Gong">image/t01e7867e25856a0b62.jpg</file>
+    </qresource>
+</RCC>
